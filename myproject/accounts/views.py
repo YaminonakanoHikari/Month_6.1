@@ -71,3 +71,24 @@ def google_callback(request):
         "message": "Google login successful",
         "email": user.email
     })
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .utils import generate_confirmation_code, save_confirmation_code, verify_confirmation_code
+
+class SendConfirmationCodeView(APIView):
+    def post(self, request):
+        user_id = request.data.get("user_id")
+        code = generate_confirmation_code()
+        save_confirmation_code(user_id, code)
+        # Здесь можно отправить code пользователю (email/SMS)
+        return Response({"message": "Code sent"}, status=status.HTTP_200_OK)
+
+class VerifyConfirmationCodeView(APIView):
+    def post(self, request):
+        user_id = request.data.get("user_id")
+        code = request.data.get("code")
+        if verify_confirmation_code(user_id, code):
+            return Response({"message": "Code verified"}, status=status.HTTP_200_OK)
+        return Response({"message": "Invalid code"}, status=status.HTTP_400_BAD_REQUEST)
