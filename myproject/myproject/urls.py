@@ -15,11 +15,24 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include('accounts.urls')),
-
+    path('accounts/', include('accounts.urls')),   # все аккаунты, включая google/login
+    path('api/', include('products.urls')),
+    
     # swagger
     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    path('api/', include('products.urls')),
 ]
+
+# urlpatterns = [
+#     path('admin/', admin.site.urls),
+#     path('api/auth/', include('accounts.urls')),
+
+#     # swagger
+#     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+#     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+#     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+#     path('api/', include('products.urls')),
+#     path('accounts/', include('accounts.urls')),   # <- вот здесь
+#     path('api/', include('api.urls')),   
+# ]
