@@ -1,0 +1,16 @@
+celery:
+  build: .
+  container_name: celery_worker
+  command: sh -c "./wait-for-it.sh redis celery -A config worker -l info"
+  ...
+
+celery_beat:
+  build: .
+  container_name: celery_beat
+  command: sh -c "./wait-for-it.sh redis celery -A config beat -l info"
+  ...
+
+flower:
+  image: mher/flower
+  container_name: flower
+  command: sh -c "./wait-for-it.sh redis celery --broker=${CELERY_BROKER_URL} flower"
