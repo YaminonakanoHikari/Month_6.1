@@ -1,23 +1,93 @@
-redis:
-  image: redis:7
-  container_name: redis
-  ports:
-    - "6379:6379"
-  healthcheck:
-    test: ["CMD", "redis-cli", "ping"]
-    interval: 2s
-    retries: 5
+version: "3.8"
 
-backend:
-  build: .
-  container_name: django_backend
-  command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-  env_file:
-    - .env
-  volumes:
-    - .:/app
-  ports:
-    - "8000:8000"
-  depends_on:
-    redis:
-      condition: service_healthy
+services:
+  web:
+    build:
+      context: .
+    # Используем 0.0.0.0, чтобы контейнер был доступен снаружи
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "7001:8000"
+    env_file:
+      .env
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy 
+      redis:
+        condition: service_started
+
+  db:
+    image: postgres:14
+    environment:
+      # Исправлено: используем имена из вашего .env
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Исправлено: используем правильные переменные
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: .
+    command: celery -A myproject worker --loglevel=info
+    env_file:
+      .env
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_beat:
+    build:
+      context: .
+    command: celery -A myproject beat --loglevel=info
+    env_file:
+      .env
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_flower:
+    build:
+      context: .
+    command: celery -A myproject flower --port=5555
+    ports:
+      - "5556:5555"
+    env_file:
+      .env
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery_worker:
+        condition: service_started
+
+volumes:
+  db-data:
+  redis-data:
