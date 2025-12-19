@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -137,3 +138,12 @@ CELERY_TASK_SERIALIZER = 'json'
 
 INSTALLED_APPS += ['django_celery_beat']
 
+
+CELERY_BEAT_SCHEDULE = {
+    'deactivate-expired-products-every-night': {
+        'task': 'accounts.tasks.deactivate_expired_products',
+        'schedule': crontab(hour=3, minute=0),
+    },
+}
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
